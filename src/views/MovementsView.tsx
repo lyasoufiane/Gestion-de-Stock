@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { MovementType, StockMovement, UserRole, MovementItem } from '../types';
+import { MovementType, StockMovement, UserRole, MovementItem, Supplier } from '../types';
 import { storageService, getRolePermissions } from '../services/storageService';
 import { generateMovementPdf } from '../utils/pdfGenerator';
+import { QuickAddSupplierModal } from '../components/QuickAddSupplierModal';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -26,6 +27,7 @@ export const MovementsView: React.FC<Props> = ({ currentRole, onOpenScanner }) =
   const perms = getRolePermissions(currentRole);
   const [movementFilter, setMovementFilter] = useState<'ALL' | 'ENTREE_BR' | 'SORTIE_BL'>('ALL');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isQuickSupplierOpen, setIsQuickSupplierOpen] = useState(false);
 
   // New Movement Form state
   const [type, setType] = useState<MovementType>('ENTREE_BR');
@@ -44,6 +46,7 @@ export const MovementsView: React.FC<Props> = ({ currentRole, onOpenScanner }) =
 
   const movements = storageService.getMovements();
   const products = storageService.getProducts();
+  const suppliers = storageService.getSuppliers();
 
   const filteredMovements = movements.filter(m => {
     if (movementFilter === 'ALL') return true;
@@ -358,17 +361,55 @@ export const MovementsView: React.FC<Props> = ({ currentRole, onOpenScanner }) =
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    {type === 'ENTREE_BR' ? 'Fournisseur *' : 'Client / Acheteur *'}
-                  </label>
-                  <input
-                    type="text"
-                    value={partyName}
-                    onChange={e => setPartyName(e.target.value)}
-                    placeholder={type === 'ENTREE_BR' ? 'ex: Disway Maroc' : 'ex: Groupe OCP SA'}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
-                    required
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-slate-700">
+                      {type === 'ENTREE_BR' ? 'Fournisseur *' : 'Client / Acheteur *'}
+                    </label>
+                    {type === 'ENTREE_BR' && (
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickSupplierOpen(true)}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>+ Nouveau Fournisseur</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {type === 'ENTREE_BR' ? (
+                    <div className="space-y-1.5">
+                      <select
+                        value={partyName}
+                        onChange={e => setPartyName(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900"
+                      >
+                        <option value="">-- Choisir un Fournisseur Partenaire --</option>
+                        {suppliers.map(sup => (
+                          <option key={sup.id} value={sup.name}>
+                            {sup.name} {sup.ice ? `(ICE: ${sup.ice.substring(0, 9)}...)` : ''} - {sup.category}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={partyName}
+                        onChange={e => setPartyName(e.target.value)}
+                        placeholder="Ou saisissez un autre fournisseur manuellement..."
+                        className="w-full bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 placeholder:text-slate-400"
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={partyName}
+                      onChange={e => setPartyName(e.target.value)}
+                      placeholder="ex: Groupe OCP SA, Ministère de la Santé..."
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium"
+                      required
+                    />
+                  )}
                 </div>
               </div>
 
@@ -539,6 +580,16 @@ export const MovementsView: React.FC<Props> = ({ currentRole, onOpenScanner }) =
           </div>
         </div>
       )}
+
+      {/* QUICK ADD SUPPLIER MODAL */}
+      <QuickAddSupplierModal
+        isOpen={isQuickSupplierOpen}
+        onClose={() => setIsQuickSupplierOpen(false)}
+        onSupplierCreated={(newSup) => {
+          setPartyName(newSup.name);
+          setIsQuickSupplierOpen(false);
+        }}
+      />
     </div>
   );
 };

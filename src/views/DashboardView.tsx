@@ -28,7 +28,9 @@ import {
   TrendingUp,
   Download,
   PieChart as PieIcon,
-  BarChart3
+  BarChart3,
+  Truck,
+  Plus
 } from 'lucide-react';
 
 interface Props {
@@ -107,6 +109,48 @@ export const DashboardView: React.FC<Props> = ({ onNavigate, onOpenScanner }) =>
           </button>
         </div>
       )}
+
+      {/* Quick Actions Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+          <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-200">Accès Rapide</span>
+          <span className="text-slate-500">Raccourcis Opérationnels</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => onNavigate('suppliers')}
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
+          >
+            <Truck className="w-4 h-4 text-blue-400" />
+            <span>Ajouter / Gérer Fournisseurs</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('movements')}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
+          >
+            <ArrowDownLeft className="w-4 h-4" />
+            <span>Nouveau BR (Réception)</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('movements')}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
+          >
+            <ArrowUpRight className="w-4 h-4" />
+            <span>Nouveau BL (Expédition)</span>
+          </button>
+
+          <button
+            onClick={onOpenScanner}
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer border border-slate-300"
+          >
+            <Barcode className="w-4 h-4 text-slate-600" />
+            <span>Scanner Douchette</span>
+          </button>
+        </div>
+      </div>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

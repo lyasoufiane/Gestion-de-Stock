@@ -86,6 +86,8 @@ export interface Product {
   trackingType: TrackingType;
   warrantyMonths?: number;   // 12, 24, 36 mois
   unit: string;              // Unité, Carton, Ramette, Boîte
+  supplierId?: string;       // ID Fournisseur attribué
+  supplierName?: string;     // Nom Fournisseur
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -199,3 +201,48 @@ export interface AuditLog {
   action: string;
   details: string;
 }
+
+export interface UserAccessRights {
+  canConsultStock: boolean;         // Consultation du catalogue et des niveaux de stock
+  canCreateMovements: boolean;      // Saisie des Entrées (BR) et Sorties (BL)
+  canValidateInventory: boolean;    // Réalisation et validation des inventaires
+  canViewPurchasePrices: boolean;   // Consultation Prix d'Achat (PAMP) et Valorisation
+  canManageSuppliers: boolean;      // Gestion des fiches fournisseurs
+  canManageCatalog: boolean;        // Création / Modification des fiches articles & S/N
+  canManageUsers: boolean;          // Ajout/Modification des utilisateurs et droits d'accès
+  canExportData: boolean;           // Exportation des données en JSON / Excel
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;          // ex: "admin", "magasinier1", "achat_youssef"
+  email: string;             // ex: "soufian144@gmail.com"
+  fullName: string;          // ex: "Soufiane - Administrateur Système"
+  role: UserRole;            // 'ADMIN' | 'PURCHASE_MGR' | 'WAREHOUSE_AGENT' | 'SALES'
+  passwordHash: string;      // Mot de passe sécurisé
+  pinCode?: string;          // Code PIN d'accès rapide (ex: "2026")
+  avatarUrl?: string;
+  isActive: boolean;         // Compte actif ou suspendu
+  accessRights: UserAccessRights; // Matrice des droits d'accès personnalisés
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  token: string;
+  authenticatedAt: string;
+  rememberMe: boolean;
+  isLocked?: boolean;
+}
+
+export interface LoginAttempt {
+  id: string;
+  timestamp: string;
+  identifier: string;
+  success: boolean;
+  method: 'PASSWORD' | 'PIN';
+  ipAddress?: string;
+  userAgent?: string;
+}
+

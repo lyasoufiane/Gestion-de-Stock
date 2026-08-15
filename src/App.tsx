@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Product } from './types';
 import { storageService, subscribeToStorage } from './services/storageService';
+import { authService, subscribeToAuth } from './services/authService';
 import { Header, ViewTab } from './components/Header';
+import { LoginView } from './views/LoginView';
+import { SessionLockModal } from './components/Auth/SessionLockModal';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { SerialTraceabilityModal } from './components/SerialTraceabilityModal';
 import { DashboardView } from './views/DashboardView';
@@ -10,9 +13,11 @@ import { SerialTraceabilityView } from './views/SerialTraceabilityView';
 import { MovementsView } from './views/MovementsView';
 import { InventoryView } from './views/InventoryView';
 import { PurchasingView } from './views/PurchasingView';
+import { SuppliersView } from './views/SuppliersView';
 import { SettingsView } from './views/SettingsView';
 
 export default function App() {
+  const [session, setSession] = useState(authService.getSession());
   const [activeTab, setActiveTab] = useState<ViewTab>('dashboard');
   const [currentRole, setCurrentRole] = useState<UserRole>('ADMIN');
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,16 +32,42 @@ export default function App() {
 
   useEffect(() => {
     setCurrentRole(storageService.getRole());
-    const unsubscribe = subscribeToStorage(() => {
+    
+    // Storage listener
+    const unsubscribeStorage = subscribeToStorage(() => {
       setTick(t => t + 1);
       setCurrentRole(storageService.getRole());
     });
-    return unsubscribe;
+
+    // Auth listener
+    const unsubscribeAuth = subscribeToAuth((newSession) => {
+      setSession(newSession);
+      setTick(t => t + 1);
+    });
+
+    return () => {
+      unsubscribeStorage();
+      unsubscribeAuth();
+    };
   }, []);
 
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
     storageService.setRole(role);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setSession(null);
+  };
+
+  const handleLock = () => {
+    authService.lockSession();
+    setSession(authService.getSession());
+  };
+
+  const handleUnlocked = () => {
+    setSession(authService.getSession());
   };
 
   const handleOpenSerialModalForProduct = (product: Product) => {
@@ -49,6 +80,12 @@ export default function App() {
     }
   };
 
+  // If no active session, show Login Screen
+  if (!session) {
+    return <LoginView onLoginSuccess={() => setSession(authService.getSession())} />;
+  }
+
+  const isLocked = !!session.isLocked;
   const suggestions = storageService.getPurchaseSuggestions();
 
   return (
@@ -63,6 +100,8 @@ export default function App() {
         onOpenScanner={() => setIsScannerOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onLogout={handleLogout}
+        onLock={handleLock}
       />
 
       {/* Main Workspace Content Area */}
@@ -104,10 +143,21 @@ export default function App() {
           <PurchasingView currentRole={currentRole} />
         )}
 
+        {activeTab === 'suppliers' && (
+          <SuppliersView
+            currentRole={currentRole}
+            onNavigateToMovements={() => {
+              setActiveTab('movements');
+            }}
+          />
+        )}
+
         {activeTab === 'settings' && (
           <SettingsView
             currentRole={currentRole}
             onRoleChange={handleRoleChange}
+            onLogout={handleLogout}
+            onLock={handleLock}
           />
         )}
       </main>
@@ -119,7 +169,7 @@ export default function App() {
             © 2026 <span className="text-white font-semibold">Gestion de Stock & Inventaire IT Maroc</span> — Distribution Matériel & Consommables Informatiques
           </div>
           <div className="font-mono text-[11px] text-slate-500">
-            Traçabilité S/N • Lots & Cartons • Scan Douchette • PDF BR/BL
+            Authentification Unique • Traçabilité S/N • Lots & Cartons • Scan Douchette • PDF BR/BL
           </div>
         </div>
       </footer>
@@ -128,7 +178,7 @@ export default function App() {
       <BarcodeScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
-        onSelectProduct={(p) => {
+        onSelectProduct={() => {
           setActiveTab('catalog');
         }}
         onSelectSerial={(s) => {
@@ -142,6 +192,13 @@ export default function App() {
         isOpen={isSerialModalOpen}
         onClose={() => setIsSerialModalOpen(false)}
         serial={activeSerialObj}
+      />
+
+      {/* Session Lock Modal */}
+      <SessionLockModal
+        isOpen={isLocked}
+        onUnlocked={handleUnlocked}
+        onLogout={handleLogout}
       />
     </div>
   );

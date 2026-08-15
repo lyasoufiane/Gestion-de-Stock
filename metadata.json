@@ -1,6 +1,6 @@
 {
   "name": "Gestion de Stock & Inventaire IT",
-  "description": "Application de gestion de stock et d'inventaire IT centralisée : traçabilité par numéro de série, gestion par lots, mouvements d'entrées/sorties (BR/BL), inventaires et alertes de réapprovisionnement.",
+  "description": "Application de gestion de stock et d'inventaire IT centralisée avec gestion multi-utilisateurs par l'administrateur, définition granulaire des droits d'accès (RBAC), traçabilité par numéro de série, gestion par lots, mouvements d'entrées/sorties (BR/BL) et inventaires.",
   "requestFramePermissions": [
     "camera"
   ],
