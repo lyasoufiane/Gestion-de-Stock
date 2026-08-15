@@ -38,6 +38,25 @@ export interface Supplier {
   notes?: string;           // Remarques ou contrats
 }
 
+export type WarehouseType = 'PRINCIPAL' | 'SECONDAIRE' | 'MAGASIN_EXPO' | 'TRANSIT' | 'SAV';
+
+export interface Warehouse {
+  id: string;
+  name: string;             // Nom du Dépôt ex: "Dépôt Principal - Casablanca"
+  code: string;             // Code interne ex: "DEP-CASA-01"
+  type: WarehouseType;      // Type de dépôt
+  city: string;             // Ville ex: "Casablanca"
+  address?: string;         // Adresse complète ex: "Zone Industrielle Ain Sebaâ"
+  managerName?: string;     // Responsable du dépôt ex: "Tariq Mansouri"
+  phone?: string;           // Téléphone direct
+  email?: string;           // Email du dépôt
+  capacityNotes?: string;   // Surface / Capacité palettes ex: "1 200 m² • 350 Palettes"
+  isDefault?: boolean;      // Dépôt sélectionné par défaut
+  isActive: boolean;        // Dépôt actif ou désactivé
+  description?: string;     // Notes ou consignes de stockage
+  createdAt: string;
+}
+
 export type UserRole = 'ADMIN' | 'PURCHASE_MGR' | 'WAREHOUSE_AGENT' | 'SALES';
 
 export interface UserPermissions {

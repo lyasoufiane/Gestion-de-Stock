@@ -1,4 +1,71 @@
-import { Product, SerialItem, BatchLotItem, StockMovement, InventoryAudit, AuditLog, CompanyProfile, Supplier } from '../types';
+import { Product, SerialItem, BatchLotItem, StockMovement, InventoryAudit, AuditLog, CompanyProfile, Supplier, Warehouse } from '../types';
+
+export const INITIAL_WAREHOUSES: Warehouse[] = [
+  {
+    id: 'wh-001',
+    name: 'Dépôt Principal - Casablanca',
+    code: 'DEP-CASA-01',
+    type: 'PRINCIPAL',
+    city: 'Casablanca',
+    address: 'Zone Industrielle Ain Sebaâ, Allée des Usines',
+    managerName: 'Tariq Mansouri (Chef Magasinier)',
+    phone: '+212 522 35 12 00',
+    email: 'depot.casa@distribution-it.ma',
+    capacityNotes: '1 200 m² • 350 Palettes • Racks Haute Densité',
+    isDefault: true,
+    isActive: true,
+    description: 'Dépôt central de stockage, réceptions fournisseurs et préparation des commandes clients.',
+    createdAt: '2026-01-10T08:00:00Z'
+  },
+  {
+    id: 'wh-002',
+    name: 'Dépôt Palettes - Berrechid',
+    code: 'DEP-BER-02',
+    type: 'SECONDAIRE',
+    city: 'Berrechid',
+    address: 'Parc Logistique Industriel, Route de Marrakech',
+    managerName: 'Karim Bennani',
+    phone: '+212 522 91 44 22',
+    email: 'logistique.berrechid@distribution-it.ma',
+    capacityNotes: '2 500 m² • 800 Palettes • Stockage Masse Consommables',
+    isDefault: false,
+    isActive: true,
+    description: 'Dépôt de réserve volumineuse pour cartons de papier, consommables et serveurs.',
+    createdAt: '2026-02-15T09:30:00Z'
+  },
+  {
+    id: 'wh-003',
+    name: 'Magasin Expo - Rabat',
+    code: 'MAG-RAB-01',
+    type: 'MAGASIN_EXPO',
+    city: 'Rabat',
+    address: 'Avenue Fal Ould Oumeir, Agdal, Rabat',
+    managerName: 'Sophia Idrissi',
+    phone: '+212 537 77 88 99',
+    email: 'showroom.rabat@distribution-it.ma',
+    capacityNotes: '250 m² • Showroom Présentation & Vente Directe',
+    isDefault: false,
+    isActive: true,
+    description: 'Showroom de démonstration, vente directe aux professionnels et stock tampon régional.',
+    createdAt: '2026-03-01T10:00:00Z'
+  },
+  {
+    id: 'wh-004',
+    name: 'Atelier SAV & Retours - Casablanca',
+    code: 'SAV-CASA-01',
+    type: 'SAV',
+    city: 'Casablanca',
+    address: '145 Boulevard Zerktouni, Niveau -1',
+    managerName: 'Amine Chraibi (Tech Lead SAV)',
+    phone: '+212 522 34 56 80',
+    email: 'sav@distribution-it.ma',
+    capacityNotes: '100 m² • Zone Équipements en Diagnostic / Retour Constructeur',
+    isDefault: false,
+    isActive: true,
+    description: 'Zone dédiée aux réceptions SAV, échanges sous garantie et retours constructeurs.',
+    createdAt: '2026-04-10T14:00:00Z'
+  }
+];
 
 export const INITIAL_COMPANY_PROFILE: CompanyProfile = {
   name: 'DISTRIBUTION & MATÉRIEL IT MAROC',

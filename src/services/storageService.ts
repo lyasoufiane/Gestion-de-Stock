@@ -9,7 +9,8 @@ import {
   AuditLog,
   UserPermissions,
   CompanyProfile,
-  Supplier
+  Supplier,
+  Warehouse
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -19,7 +20,8 @@ import {
   INITIAL_AUDITS,
   INITIAL_AUDIT_LOGS,
   INITIAL_COMPANY_PROFILE,
-  INITIAL_SUPPLIERS
+  INITIAL_SUPPLIERS,
+  INITIAL_WAREHOUSES
 } from '../data/initialData';
 
 const KEYS = {
@@ -31,7 +33,8 @@ const KEYS = {
   AUDITS: 'it_stock_audits',
   LOGS: 'it_stock_logs',
   COMPANY_PROFILE: 'it_stock_company_profile',
-  SUPPLIERS: 'it_stock_suppliers'
+  SUPPLIERS: 'it_stock_suppliers',
+  WAREHOUSES: 'it_stock_warehouses'
 };
 
 type Listener = () => void;
@@ -549,6 +552,110 @@ class StorageService {
     this.logAction('DELETE_SUPPLIER', `Fournisseur supprimé ID: ${id}`);
   }
 
+  // --- WAREHOUSES & MULTI-LOCATIONS ---
+  getWarehouses(): Warehouse[] {
+    return this.getItem<Warehouse[]>(KEYS.WAREHOUSES, INITIAL_WAREHOUSES);
+  }
+
+  getWarehouseById(id: string): Warehouse | undefined {
+    return this.getWarehouses().find(w => w.id === id);
+  }
+
+  getDefaultWarehouse(): Warehouse | undefined {
+    const list = this.getWarehouses();
+    return list.find(w => w.isDefault && w.isActive) || list.find(w => w.isActive) || list[0];
+  }
+
+  saveWarehouse(warehouse: Partial<Warehouse> & { name: string }): Warehouse {
+    const warehouses = this.getWarehouses();
+    const cleanName = warehouse.name.trim();
+
+    // If marked as default, unset previous default
+    if (warehouse.isDefault) {
+      warehouses.forEach(w => {
+        w.isDefault = false;
+      });
+    }
+
+    if (warehouse.id) {
+      const index = warehouses.findIndex(w => w.id === warehouse.id);
+      if (index !== -1) {
+        warehouses[index] = {
+          ...warehouses[index],
+          ...warehouse,
+          name: cleanName
+        };
+        this.setItem(KEYS.WAREHOUSES, warehouses);
+        this.logAction('UPDATE_WAREHOUSE', `Dépôt / Entrepôt mis à jour: ${cleanName} (${warehouses[index].code})`);
+        return warehouses[index];
+      }
+    }
+
+    // New Warehouse
+    const newId = `wh-${Date.now()}`;
+    const code = warehouse.code?.trim() || `DEP-${cleanName.substring(0, 3).toUpperCase()}-${Math.floor(10 + Math.random() * 90)}`;
+    const newWh: Warehouse = {
+      id: newId,
+      name: cleanName,
+      code: code.toUpperCase(),
+      type: warehouse.type || 'SECONDAIRE',
+      city: warehouse.city?.trim() || 'Casablanca',
+      address: warehouse.address?.trim() || '',
+      managerName: warehouse.managerName?.trim() || '',
+      phone: warehouse.phone?.trim() || '',
+      email: warehouse.email?.trim() || '',
+      capacityNotes: warehouse.capacityNotes?.trim() || '',
+      isDefault: !!warehouse.isDefault || warehouses.length === 0,
+      isActive: warehouse.isActive !== undefined ? warehouse.isActive : true,
+      description: warehouse.description?.trim() || '',
+      createdAt: new Date().toISOString()
+    };
+
+    warehouses.push(newWh);
+    this.setItem(KEYS.WAREHOUSES, warehouses);
+    this.logAction('CREATE_WAREHOUSE', `Nouveau dépôt créé: ${newWh.name} [Code: ${newWh.code}]`);
+    return newWh;
+  }
+
+  deleteWarehouse(id: string): { success: boolean; message?: string } {
+    const warehouses = this.getWarehouses();
+    const target = warehouses.find(w => w.id === id);
+    if (!target) return { success: false, message: 'Dépôt introuvable.' };
+
+    // Check if any product is currently located in this warehouse
+    const products = this.getProducts();
+    const productsInWh = products.filter(p => p.location?.warehouse === target.name);
+    if (productsInWh.length > 0) {
+      return {
+        success: false,
+        message: `Impossible de supprimer ce dépôt : ${productsInWh.length} article(s) y sont actuellement stockés ou assignés. Veuillez d'abord réaffecter ces articles.`
+      };
+    }
+
+    const filtered = warehouses.filter(w => w.id !== id);
+    
+    // If we deleted the default warehouse, make the first active warehouse the default
+    if (target.isDefault && filtered.length > 0) {
+      filtered[0].isDefault = true;
+    }
+
+    this.setItem(KEYS.WAREHOUSES, filtered);
+    this.logAction('DELETE_WAREHOUSE', `Dépôt supprimé: ${target.name} (${target.code})`);
+    return { success: true };
+  }
+
+  setDefaultWarehouse(id: string): void {
+    const warehouses = this.getWarehouses();
+    warehouses.forEach(w => {
+      w.isDefault = (w.id === id);
+    });
+    this.setItem(KEYS.WAREHOUSES, warehouses);
+    const selected = warehouses.find(w => w.id === id);
+    if (selected) {
+      this.logAction('SET_DEFAULT_WAREHOUSE', `Dépôt principal par défaut défini: ${selected.name}`);
+    }
+  }
+
   getRoleName(role: UserRole): string {
     switch (role) {
       case 'ADMIN': return 'Administrateur Système';
@@ -569,6 +676,7 @@ class StorageService {
     this.setItem(KEYS.LOGS, INITIAL_AUDIT_LOGS);
     this.setItem(KEYS.COMPANY_PROFILE, INITIAL_COMPANY_PROFILE);
     this.setItem(KEYS.SUPPLIERS, INITIAL_SUPPLIERS);
+    this.setItem(KEYS.WAREHOUSES, INITIAL_WAREHOUSES);
     this.logAction('RESET', 'Base de données réinitialisée aux données d\'origine.');
   }
 
@@ -576,6 +684,7 @@ class StorageService {
     return JSON.stringify({
       companyProfile: this.getCompanyProfile(),
       suppliers: this.getSuppliers(),
+      warehouses: this.getWarehouses(),
       products: this.getProducts(),
       serials: this.getSerials(),
       lots: this.getLots(),
@@ -590,6 +699,7 @@ class StorageService {
       const data = JSON.parse(jsonString);
       if (data.companyProfile) this.setItem(KEYS.COMPANY_PROFILE, data.companyProfile);
       if (data.suppliers) this.setItem(KEYS.SUPPLIERS, data.suppliers);
+      if (data.warehouses) this.setItem(KEYS.WAREHOUSES, data.warehouses);
       if (data.products) this.setItem(KEYS.PRODUCTS, data.products);
       if (data.serials) this.setItem(KEYS.SERIALS, data.serials);
       if (data.lots) this.setItem(KEYS.LOTS, data.lots);

@@ -16,7 +16,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Filter,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Warehouse as WarehouseIcon
 } from 'lucide-react';
 
 interface Props {
@@ -32,6 +33,7 @@ export const CatalogView: React.FC<Props> = ({
 }) => {
   const perms = getRolePermissions(currentRole);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'ALL'>('ALL');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -40,10 +42,12 @@ export const CatalogView: React.FC<Props> = ({
   const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
 
   const products = storageService.getProducts();
+  const warehouses = storageService.getWarehouses();
 
   // Filtering
   const filteredProducts = products.filter(p => {
     const matchesCategory = selectedCategory === 'ALL' || p.category === selectedCategory;
+    const matchesWarehouse = selectedWarehouse === 'ALL' || p.location?.warehouse === selectedWarehouse;
     const q = searchQuery.toLowerCase();
     const matchesSearch =
       !q ||
@@ -51,9 +55,10 @@ export const CatalogView: React.FC<Props> = ({
       p.sku.toLowerCase().includes(q) ||
       p.brand.toLowerCase().includes(q) ||
       p.barcode.toLowerCase().includes(q) ||
-      p.subcategory.toLowerCase().includes(q);
+      p.subcategory.toLowerCase().includes(q) ||
+      (p.location?.warehouse && p.location.warehouse.toLowerCase().includes(q));
 
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesWarehouse && matchesSearch;
   });
 
   const handleDelete = (id: string, name: string) => {
@@ -66,40 +71,59 @@ export const CatalogView: React.FC<Props> = ({
     <div className="space-y-6">
       {/* Top Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-        {/* Category Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setSelectedCategory('ALL')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
-              selectedCategory === 'ALL' ? 'bg-slate-900 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Tous ({products.length})
-          </button>
-          <button
-            onClick={() => setSelectedCategory('Matériel Identifiable')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
-              selectedCategory === 'Matériel Identifiable' ? 'bg-purple-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Matériel Identifiable
-          </button>
-          <button
-            onClick={() => setSelectedCategory('Consommables & Fournitures')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
-              selectedCategory === 'Consommables & Fournitures' ? 'bg-amber-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Consommables & Fournitures
-          </button>
-          <button
-            onClick={() => setSelectedCategory('Accessoires & Connectique')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
-              selectedCategory === 'Accessoires & Connectique' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Accessoires & Connectique
-          </button>
+        {/* Category Tabs & Warehouse Filter */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
+                selectedCategory === 'ALL' ? 'bg-slate-900 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Tous ({products.length})
+            </button>
+            <button
+              onClick={() => setSelectedCategory('Matériel Identifiable')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
+                selectedCategory === 'Matériel Identifiable' ? 'bg-purple-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Matériel Identifiable
+            </button>
+            <button
+              onClick={() => setSelectedCategory('Consommables & Fournitures')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
+                selectedCategory === 'Consommables & Fournitures' ? 'bg-amber-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Consommables & Fournitures
+            </button>
+            <button
+              onClick={() => setSelectedCategory('Accessoires & Connectique')}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-xl transition-colors cursor-pointer ${
+                selectedCategory === 'Accessoires & Connectique' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Accessoires & Connectique
+            </button>
+          </div>
+
+          {/* Warehouse Filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs text-slate-700">
+            <WarehouseIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <select
+              value={selectedWarehouse}
+              onChange={e => setSelectedWarehouse(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">Tous les Dépôts ({warehouses.length})</option>
+              {warehouses.map(w => (
+                <option key={w.id} value={w.name}>
+                  {w.name} ({w.city})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Add Product & CSV Import Buttons (If Admin/Purchase/Warehouse) */}

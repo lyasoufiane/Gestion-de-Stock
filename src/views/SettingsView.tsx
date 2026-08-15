@@ -6,6 +6,7 @@ import { CompanyProfileEditor } from '../components/CompanyProfileEditor';
 import { SupplierRegistryManager } from '../components/SupplierRegistryManager';
 import { SingleUserAccountSettings } from '../components/SingleUserAccountSettings';
 import { UserManager } from '../components/UserManager';
+import { WarehouseManager } from '../components/WarehouseManager';
 import {
   ShieldCheck,
   RotateCcw,
@@ -16,7 +17,8 @@ import {
   Truck,
   KeyRound,
   Users,
-  Shield
+  Shield,
+  Warehouse as WarehouseIcon
 } from 'lucide-react';
 
 interface Props {
@@ -26,7 +28,7 @@ interface Props {
   onLock?: () => void;
 }
 
-export type SettingsSubTab = 'users' | 'account' | 'company' | 'suppliers' | 'rbac';
+export type SettingsSubTab = 'users' | 'account' | 'warehouses' | 'company' | 'suppliers' | 'rbac';
 
 export const SettingsView: React.FC<Props> = ({ currentRole, onRoleChange, onLogout, onLock }) => {
   const perms = getRolePermissions(currentRole);
@@ -104,6 +106,18 @@ export const SettingsView: React.FC<Props> = ({ currentRole, onRoleChange, onLog
         </button>
 
         <button
+          onClick={() => setActiveSubTab('warehouses')}
+          className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
+            activeSubTab === 'warehouses'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <WarehouseIcon className="w-4 h-4" />
+          <span>Dépôts & Entrepôts (Multi-Emplacements)</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('company')}
           className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
             activeSubTab === 'company'
@@ -146,6 +160,10 @@ export const SettingsView: React.FC<Props> = ({ currentRole, onRoleChange, onLog
 
       {activeSubTab === 'account' && (
         <SingleUserAccountSettings onLogout={onLogout} onLock={onLock} />
+      )}
+
+      {activeSubTab === 'warehouses' && (
+        <WarehouseManager />
       )}
 
       {activeSubTab === 'company' && (

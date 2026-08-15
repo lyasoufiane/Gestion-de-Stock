@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Product, ProductCategory, TrackingType, Supplier } from '../types';
+import { Product, ProductCategory, TrackingType, Supplier, Warehouse } from '../types';
 import { storageService } from '../services/storageService';
 import { QuickAddSupplierModal } from './QuickAddSupplierModal';
-import { X, Save, Package, DollarSign, MapPin, AlertCircle, Shield, Truck, Plus } from 'lucide-react';
+import { WarehouseFormModal } from './WarehouseFormModal';
+import { X, Save, Package, DollarSign, MapPin, AlertCircle, Shield, Truck, Plus, Warehouse as WarehouseIcon } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -18,7 +19,11 @@ export const ProductFormModal: React.FC<Props> = ({
   onSaved
 }) => {
   const [isQuickSupplierOpen, setIsQuickSupplierOpen] = useState(false);
+  const [isQuickWarehouseOpen, setIsQuickWarehouseOpen] = useState(false);
   const suppliers = storageService.getSuppliers();
+  const warehouses = storageService.getWarehouses().filter(w => w.isActive);
+  const defaultWh = storageService.getDefaultWarehouse();
+
   const [formData, setFormData] = useState<Partial<Product>>({
     sku: '',
     designation: '',
@@ -29,7 +34,7 @@ export const ProductFormModal: React.FC<Props> = ({
     barcode: '',
     supplierId: '',
     supplierName: '',
-    location: { warehouse: 'Dépôt Principal - Casablanca', aisle: 'Allée A', shelf: 'Étagère 1' },
+    location: { warehouse: defaultWh?.name || 'Dépôt Principal - Casablanca', aisle: 'Allée A', shelf: 'Étagère 1' },
     pricing: { purchasePriceHT: 0, publicSellingPriceHT: 0, publicSellingPriceTTC: 0, resellerPriceHT: 0 },
     minStockThreshold: 5,
     currentStockQuantity: 0,
@@ -45,6 +50,7 @@ export const ProductFormModal: React.FC<Props> = ({
     if (productToEdit) {
       setFormData(productToEdit);
     } else {
+      const currentDefaultWh = storageService.getDefaultWarehouse();
       setFormData({
         sku: `SKU-IT-${Math.floor(1000 + Math.random() * 9000)}`,
         designation: '',
@@ -53,7 +59,7 @@ export const ProductFormModal: React.FC<Props> = ({
         category: 'Matériel Identifiable',
         subcategory: 'PC Portables',
         barcode: `611${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-        location: { warehouse: 'Dépôt Principal - Casablanca', aisle: 'Allée A', shelf: 'Étagère 1' },
+        location: { warehouse: currentDefaultWh?.name || 'Dépôt Principal - Casablanca', aisle: 'Allée A', shelf: 'Étagère 1' },
         pricing: { purchasePriceHT: 1000, publicSellingPriceHT: 1250, publicSellingPriceTTC: 1500, resellerPriceHT: 1150 },
         minStockThreshold: 5,
         currentStockQuantity: 0,
@@ -292,21 +298,39 @@ export const ProductFormModal: React.FC<Props> = ({
 
           {/* Location in Warehouse */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <MapPin className="w-4 h-4 text-blue-600" />
-              <span>Emplacement Dépôt (Multi-Emplacements)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                <MapPin className="w-4 h-4 text-blue-600" />
+                <span>Emplacement Dépôt (Multi-Emplacements)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickWarehouseOpen(true)}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Nouveau Dépôt</span>
+              </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">Dépôt / Entrepôt</label>
+                <label className="block text-[11px] font-medium text-slate-600 mb-1">Dépôt / Entrepôt *</label>
                 <select
-                  value={formData.location?.warehouse || 'Dépôt Principal - Casablanca'}
+                  value={formData.location?.warehouse || (warehouses[0]?.name || 'Dépôt Principal - Casablanca')}
                   onChange={e => setFormData(p => ({ ...p, location: { ...p.location!, warehouse: e.target.value } }))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
-                  <option value="Dépôt Principal - Casablanca">Dépôt Principal - Casablanca</option>
-                  <option value="Dépôt Palettes - Berrechid">Dépôt Palettes - Berrechid</option>
-                  <option value="Magasin Expo - Rabat">Magasin Expo - Rabat</option>
+                  {warehouses.map(wh => (
+                    <option key={wh.id} value={wh.name}>
+                      {wh.name} ({wh.code} - {wh.city}){wh.isDefault ? ' ⭐ [Par Défaut]' : ''}
+                    </option>
+                  ))}
+                  {/* In case current product has an old warehouse not in list */}
+                  {formData.location?.warehouse && !warehouses.some(w => w.name === formData.location?.warehouse) && (
+                    <option value={formData.location.warehouse}>
+                      {formData.location.warehouse} (Ancien / Spécifique)
+                    </option>
+                  )}
                 </select>
               </div>
 
@@ -454,6 +478,23 @@ export const ProductFormModal: React.FC<Props> = ({
             supplierName: newSup.name
           }));
           setIsQuickSupplierOpen(false);
+        }}
+      />
+
+      {/* QUICK ADD WAREHOUSE MODAL */}
+      <WarehouseFormModal
+        isOpen={isQuickWarehouseOpen}
+        onClose={() => setIsQuickWarehouseOpen(false)}
+        onSaved={(newWh) => {
+          setFormData(p => ({
+            ...p,
+            location: {
+              warehouse: newWh.name,
+              aisle: p.location?.aisle || 'Allée A',
+              shelf: p.location?.shelf || 'Étagère 1'
+            }
+          }));
+          setIsQuickWarehouseOpen(false);
         }}
       />
     </div>
